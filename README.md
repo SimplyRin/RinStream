@@ -28,7 +28,7 @@ public static void main(String[] args) {
     <dependency>
       <groupId>net.simplyrin.rinstream</groupId>
       <artifactId>RinStream</artifactId>
-      <version>1.0</version>
+      <version>1.1</version>
     </dependency>
   </dependencies>
 ```
