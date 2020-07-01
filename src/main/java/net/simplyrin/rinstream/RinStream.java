@@ -39,6 +39,7 @@ public class RinStream extends PrintStream {
 	private String prefix = "HH:mm:ss";
 	private boolean saveLog;
 	private File logFolder;
+	private String mid = "|";
 
 	@SuppressWarnings("resource")
 	public static void init() {
@@ -54,26 +55,6 @@ public class RinStream extends PrintStream {
 		this.rinStream = this;
 
 		this.file = this.getAvailableName(new File("logs"));
-	}
-
-	public void enableError() {
-		new ErrorStream();
-	}
-
-	public class ErrorStream extends PrintStream {
-
-		public ErrorStream() {
-			super(System.err);
-			Reflect.on(System.class).set("err", this);
-		}
-
-		@Override
-		public void print(String value) {
-			rinStream.setError();
-			rinStream.print(value, Tag.ERROR);
-			rinStream.clearError();
-		}
-
 	}
 
 	@Override
@@ -158,7 +139,16 @@ public class RinStream extends PrintStream {
 		SimpleDateFormat simpleDataFormat = new SimpleDateFormat(this.prefix);
 		Date date = new Date();
 
-		return "[" + simpleDataFormat.format(date) + "|" + tag.name() + "]";
+		return "[" + simpleDataFormat.format(date) + this.mid + tag.name() + "]";
+	}
+
+	public RinStream setMid(String mid) {
+		this.mid = mid;
+		return this;
+	}
+
+	public String getMid() {
+		return this.mid;
 	}
 
 	private File getAvailableName(File folder) {
@@ -195,6 +185,26 @@ public class RinStream extends PrintStream {
 				"See the License for the specific language governing permissions and\r\n" +
 				"limitations under the License.\r\n" +
 				"```");
+	}
+
+	public void enableError() {
+		new ErrorStream();
+	}
+
+	public class ErrorStream extends PrintStream {
+
+		public ErrorStream() {
+			super(System.err);
+			Reflect.on(System.class).set("err", this);
+		}
+
+		@Override
+		public void print(String value) {
+			rinStream.setError();
+			rinStream.print(value, Tag.ERROR);
+			rinStream.clearError();
+		}
+
 	}
 
 }
