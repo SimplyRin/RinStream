@@ -4,7 +4,7 @@
 
   <groupId>net.simplyrin.rinstream</groupId>
   <artifactId>RinStream</artifactId>
-  <version>1.2</version>
+  <version>1.2.2</version>
   <packaging>jar</packaging>
 
   <name>RinStream</name>
@@ -30,5 +30,13 @@
       <artifactId>joor-java-8</artifactId>
       <version>0.9.7</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+<dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <version>1.18.12</version>
+    <scope>provided</scope>
+</dependency>
+
   </dependencies>
 </project>

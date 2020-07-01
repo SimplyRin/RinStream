@@ -36,7 +36,7 @@ public class RinStream extends PrintStream {
 
 	private File file;
 
-	private String prefix = "[HH:mm:ss]";
+	private String prefix = "HH:mm:ss";
 	private boolean saveLog;
 	private File logFolder;
 
@@ -45,22 +45,50 @@ public class RinStream extends PrintStream {
 		new RinStream();
 	}
 
+	private RinStream rinStream;
+
 	public RinStream() {
 		super(System.out);
 		System.setOut(this);
 
+		this.rinStream = this;
+
 		this.file = this.getAvailableName(new File("logs"));
+	}
+
+	public void enableError() {
+		new ErrorStream();
+	}
+
+	public class ErrorStream extends PrintStream {
+
+		public ErrorStream() {
+			super(System.err);
+			Reflect.on(System.class).set("err", this);
+		}
+
+		@Override
+		public void print(String value) {
+			rinStream.setError();
+			rinStream.print(value, Tag.ERROR);
+			rinStream.clearError();
+		}
+
 	}
 
 	@Override
 	public void print(String value) {
+		this.print(value, Tag.INFO);
+	}
+
+	public void print(String value, Tag tag) {
 		if (value == null) {
 			value = "null";
 		}
-		value = value.replaceAll("\n", "\n" + this.getPrefix() + " ");
+		value = value.replaceAll("\n", "\n" + this.getPrefix(tag) + " ");
 
-		String line = this.getPrefix() + " " + value;
-		Reflect.on(this).call("write", line);
+		String line = this.getPrefix(tag) + " " + value;
+		Reflect.on(this).call("write", line.trim());
 
 		if (this.saveLog) {
 			try {
@@ -71,6 +99,32 @@ public class RinStream extends PrintStream {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public File getFile() {
+		return this.file;
+	}
+
+	public enum Tag {
+		INFO, ERROR
+	}
+
+	/**
+	 * @return RinStream
+	 * Windows 10 のみで動作確認。
+	 * PowerShell を使用して Tail が機能します。
+	 */
+	public RinStream tail() {
+		if (!System.getProperty("os.name").equals("Windows 10")) {
+			throw new RuntimeException("This method only works on Windows 10");
+		}
+		try {
+			ProcessBuilder processBuilder = new ProcessBuilder(new String[] { "cmd", "/c", "start", "powershell", "Get-Content", this.file.getAbsolutePath(), "-wait", "-tail", "0"});
+			processBuilder.redirectErrorStream(true);
+			processBuilder.start();
+		} catch (Exception e) {
+		}
+		return this;
 	}
 
 	public RinStream setPrefix(String contents) {
@@ -100,11 +154,11 @@ public class RinStream extends PrintStream {
 		return this;
 	}
 
-	private String getPrefix() {
+	private String getPrefix(Tag tag) {
 		SimpleDateFormat simpleDataFormat = new SimpleDateFormat(this.prefix);
 		Date date = new Date();
 
-		return simpleDataFormat.format(date);
+		return "[" + simpleDataFormat.format(date) + "|" + tag.name() + "]";
 	}
 
 	private File getAvailableName(File folder) {
