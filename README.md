@@ -4,29 +4,29 @@
 # Usage
 ```Java
 public static void main(String[] args) {
-  RinStream rinStream = new RinStream();
+    RinStream rinStream = new RinStream();
 
-  // カラーサポートを有効にする
-  rinStream.setEnableColor(true);
+    // カラーサポートを有効にする
+    rinStream.setEnableColor(true);
 
-  // §a、§b など、某ゲームで使用できるカラーコードの変換オプションを有効にする
-  // ChatColor.translate(string) を使用して変換しても OK
-  rinStream.setEnableTranslateColor(true);
+    // §a、§b など、某ゲームで使用できるカラーコードの変換オプションを有効にする
+    // ChatColor.translate(string) を使用して変換しても OK
+    rinStream.setEnableTranslateColor(true);
 
-  // System.err で出力されるログのサポートを有効にする
-  rinStream.enableError();
+    // System.err で出力されるログのサポートを有効にする
+    rinStream.enableError();
 
-  // 出力結果: [HH:mm:ss] [INFO] こんにちは！
-  System.out.println(ChatColor.GREEN + "こんにちは！！");
+    // 出力結果: [HH:mm:ss] [INFO] こんにちは！
+    System.out.println(ChatColor.GREEN + "こんにちは！！");
 
-  // INFO と表示されるタグを情報に変更する
-  RinStream.setTagInfo("情報");
+    // INFO と表示されるタグを情報に変更する
+    RinStream.setTagInfo("情報");
 
-  // 出力結果: [HH:mm:ss] [情報] こんにちは！
-  System.out.println("§aこんにちは！！");
+    // 出力結果: [HH:mm:ss] [情報] こんにちは！
+    System.out.println("§aこんにちは！！");
 
-  // 出力結果: [HH:mm:ss] [警告] エラー！！
-  System.err.println(ChatColor.GREEN + "エラー！！");
+    // 出力結果: [HH:mm:ss] [警告] エラー！！
+    System.err.println(ChatColor.GREEN + "エラー！！");
 }
 ```
 
