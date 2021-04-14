@@ -25,7 +25,7 @@ public static void main(String[] args) {
     // 出力結果: [HH:mm:ss] [情報] こんにちは！
     System.out.println("§aこんにちは！！");
 
-    // 出力結果: [HH:mm:ss] [警告] エラー！！
+    // 出力結果: [HH:mm:ss] [ERROR] エラー！！
     System.err.println(ChatColor.GREEN + "エラー！！");
 }
 ```
