@@ -21,8 +21,11 @@ public static void main(String[] args) {
   // INFO と表示されるタグを情報に変更する
   RinStream.setTagInfo("情報");
 
-  // 出力結果: [HH:mm:ss] [警告] こんにちは！
-  System.err.println(ChatColor.GREEN + "こんにちは！！");
+  // 出力結果: [HH:mm:ss] [情報] こんにちは！
+  System.out.println("§aこんにちは！！");
+
+  // 出力結果: [HH:mm:ss] [警告] エラー！！
+  System.err.println(ChatColor.GREEN + "エラー！！");
 }
 ```
 
