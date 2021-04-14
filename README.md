@@ -9,7 +9,7 @@ public static void main(String[] args) {
   // true にすると logs フォルダにファイルが生成されログが保存されていきますわよ
   rinStream.setSaveLog(true);
 
-  // 出力結果: [HH:mm:ss] Hey!
+  // 出力結果: [HH:mm:ss] [INFO] Hey!
 	System.out.println("Hey!");
 }
 ```
@@ -32,7 +32,7 @@ public static void main(String[] args) {
     <dependency>
       <groupId>net.simplyrin.rinstream</groupId>
       <artifactId>RinStream</artifactId>
-      <version>1.3</version>
+      <version>1.3.1</version>
     </dependency>
   </dependencies>
 ```
