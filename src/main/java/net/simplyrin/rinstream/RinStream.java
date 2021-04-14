@@ -6,13 +6,14 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.UUID;
 
 import org.joor.Reflect;
 
 /**
  * Created by SimplyRin on 2018/08/04.
  *
- * Copyright (c) 2018 SimplyRin
+ * Copyright (c) 2018-2021 SimplyRin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,10 +37,20 @@ public class RinStream extends PrintStream {
 
 	private File file;
 
+	private Process tailProcess;
+	private String tailName;
+
+	private String format = "[%prefix] [%type]";
 	private String prefix = "HH:mm:ss";
+
 	private boolean saveLog;
+	private boolean enableColor;
+	private boolean enableTranslateColor;
+
+	private static String TAG_INFO = "INFO";
+	private static String TAG_ERROR = "ERROR";
+
 	private File logFolder;
-	private String mid = "|";
 
 	@SuppressWarnings("resource")
 	public static void init() {
@@ -68,8 +79,13 @@ public class RinStream extends PrintStream {
 		}
 		value = value.replaceAll("\n", "\n" + this.getPrefix(tag) + " ");
 
+		if (this.enableTranslateColor) {
+			value = ChatColor.translate(value);
+		}
 		String line = this.getPrefix(tag) + " " + value;
-		Reflect.on(this).call("write", line.trim());
+
+
+		Reflect.on(this).call("write", line.trim() + ConsoleColor.RESET);
 
 		if (this.saveLog) {
 			try {
@@ -87,7 +103,40 @@ public class RinStream extends PrintStream {
 	}
 
 	public enum Tag {
-		INFO, ERROR
+		INFO, ERROR;
+
+		public String getTagWithColor() {
+			if (this.equals(INFO)) {
+				return ChatColor.BLUE + TAG_INFO + ConsoleColor.RESET;
+			}
+			return ChatColor.RED + TAG_ERROR + ConsoleColor.RESET;
+		}
+
+		public String getName() {
+			if (this.equals(INFO)) {
+				return TAG_INFO;
+			}
+			return TAG_ERROR;
+		}
+	}
+
+	public Process getTailProcess() {
+		return this.tailProcess;
+	}
+
+	/**
+	 * @return RinStream
+	 * Windows 10 のみで動作確認。
+	 * PowerShell を使用して Tail が機能します。
+	 */
+	public RinStream killPowerShell() {
+		ProcessBuilder processBuilder = new ProcessBuilder(new String[] { "taskkill", "/F", "/FI", "\"WINDOWTITLE eq " + this.tailName + "\"", "/T" });
+		try {
+			System.out.println("Killing " + this.tailName);
+			processBuilder.start();
+		} catch (Exception e) {
+		}
+		return this;
 	}
 
 	/**
@@ -100,17 +149,45 @@ public class RinStream extends PrintStream {
 			throw new RuntimeException("This method only works on Windows 10");
 		}
 		try {
-			ProcessBuilder processBuilder = new ProcessBuilder(new String[] { "cmd", "/c", "start", "powershell", "Get-Content", this.file.getAbsolutePath(), "-wait", "-tail", "0"});
+			this.tailName = "[RinStream] Windows PowerShell " + UUID.randomUUID().toString().split("-")[0];
+			ProcessBuilder processBuilder = new ProcessBuilder(new String[] { "cmd", "/c", "start", "\""
+					+ this.tailName + "\"", "powershell", "Get-Content", this.file.getAbsolutePath(), "-wait", "-tail", "0"});
 			processBuilder.redirectErrorStream(true);
-			processBuilder.start();
+			this.tailProcess = processBuilder.start();
 		} catch (Exception e) {
 		}
 		return this;
 	}
 
+	private String getPrefix(Tag tag) {
+		SimpleDateFormat simpleDataFormat = new SimpleDateFormat(this.prefix);
+		Date date = new Date();
+
+		return this.format.replace("%prefix", simpleDataFormat.format(date))
+				.replace("%type", this.enableColor ? tag.getTagWithColor() : tag.getName());
+	}
+
 	public RinStream setPrefix(String contents) {
 		this.prefix = contents;
 		return this;
+	}
+
+	public RinStream setEnableColor(boolean bool) {
+		this.enableColor = bool;
+		return this;
+	}
+
+	public boolean isEnableColor() {
+		return this.enableColor;
+	}
+
+	public RinStream setEnableTranslateColor(boolean bool) {
+		this.enableTranslateColor = bool;
+		return this;
+	}
+
+	public boolean isEnableTranslateColor() {
+		return this.enableTranslateColor;
 	}
 
 	public RinStream setSaveLog(boolean bool) {
@@ -120,6 +197,22 @@ public class RinStream extends PrintStream {
 
 	public boolean isSaveLog() {
 		return this.saveLog;
+	}
+
+	public static void setTagInfo(String tagInfo) {
+		TAG_INFO = tagInfo;
+	}
+
+	public static String getTagInfo() {
+		return TAG_INFO;
+	}
+
+	public static void setTagError(String tagError) {
+		TAG_ERROR = tagError;
+	}
+
+	public static String getTagError() {
+		return TAG_ERROR;
 	}
 
 	public RinStream setLogFolder(File folder) {
@@ -135,20 +228,16 @@ public class RinStream extends PrintStream {
 		return this;
 	}
 
-	private String getPrefix(Tag tag) {
-		SimpleDateFormat simpleDataFormat = new SimpleDateFormat(this.prefix);
-		Date date = new Date();
 
-		return "[" + simpleDataFormat.format(date) + this.mid + tag.name() + "]";
-	}
 
+	@Deprecated
 	public RinStream setMid(String mid) {
-		this.mid = mid;
 		return this;
 	}
 
+	@Deprecated
 	public String getMid() {
-		return this.mid;
+		return "@DEPRECATED";
 	}
 
 	private File getAvailableName(File folder) {
@@ -170,23 +259,6 @@ public class RinStream extends PrintStream {
 
 	}
 
-	public void printOpenSourceLicense() {
-		this.print("**・[jOOR | Apache License 2.0](https://github.com/jOOQ/jOOR/blob/master/LICENSE.txt)**\r\n" +
-				"```\r\n" +
-				"Licensed under the Apache License, Version 2.0 (the \"License\");\r\n" +
-				"you may not use this file except in compliance with the License.\r\n" +
-				"You may obtain a copy of the License at\r\n" +
-				"\r\n" +
-				"    http://www.apache.org/licenses/LICENSE-2.0\r\n" +
-				"\r\n" +
-				"Unless required by applicable law or agreed to in writing, software\r\n" +
-				"distributed under the License is distributed on an \"AS IS\" BASIS,\r\n" +
-				"WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\n" +
-				"See the License for the specific language governing permissions and\r\n" +
-				"limitations under the License.\r\n" +
-				"```");
-	}
-
 	public void enableError() {
 		new ErrorStream();
 	}
@@ -205,6 +277,165 @@ public class RinStream extends PrintStream {
 			rinStream.clearError();
 		}
 
+	}
+
+	public void printOpenSourceLicense() {
+		this.print("**・[jOOR | Apache License 2.0](https://github.com/jOOQ/jOOR/blob/master/LICENSE.txt)**\n" +
+				"```\n" +
+				"Licensed under the Apache License, Version 2.0 (the \"License\");\n" +
+				"you may not use this file except in compliance with the License.\n" +
+				"You may obtain a copy of the License at\n" +
+				"\n" +
+				"    http://www.apache.org/licenses/LICENSE-2.0\n" +
+				"\n" +
+				"Unless required by applicable law or agreed to in writing, software\n" +
+				"distributed under the License is distributed on an \"AS IS\" BASIS,\n" +
+				"WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" +
+				"See the License for the specific language governing permissions and\n" +
+				"limitations under the License.\n" +
+				"```\n" +
+				"\n" +
+				"**・[BungeeCord (ChatColor) | BSD 3-Clause \"New\" or \"Revised\" License](https://github.com/SpigotMC/BungeeCord/blob/master/LICENSE)**\n" +
+				"```\n" +
+				"Copyright (c) 2012, md_5. All rights reserved.\n" +
+				"\n" +
+				"Redistribution and use in source and binary forms, with or without\n" +
+				"modification, are permitted provided that the following conditions are met:\n" +
+				"\n" +
+				"Redistributions of source code must retain the above copyright notice, this\n" +
+				"list of conditions and the following disclaimer.\n" +
+				"\n" +
+				"Redistributions in binary form must reproduce the above copyright notice,\n" +
+				"this list of conditions and the following disclaimer in the documentation\n" +
+				"and/or other materials provided with the distribution.\n" +
+				"\n" +
+				"The name of the author may not be used to endorse or promote products derived\n" +
+				"from this software without specific prior written permission.\n" +
+				"\n" +
+				"You may not use the software for commercial software hosting services without\n" +
+				"written permission from the author.\n" +
+				"\n" +
+				"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n" +
+				"AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n" +
+				"IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n" +
+				"ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE\n" +
+				"LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\n" +
+				"CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF\n" +
+				"SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS\n" +
+				"INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\n" +
+				"CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)\n" +
+				"ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE\n" +
+				"POSSIBILITY OF SUCH DAMAGE.\n" +
+				"```\n" +
+				"\n" +
+				"**・[Lombok](https://github.com/rzwitserloot/lombok/blob/master/LICENSE)**\n" +
+				"```\n" +
+				"Copyright (C) 2009-2021 The Project Lombok Authors.\n" +
+				"\n" +
+				"Permission is hereby granted, free of charge, to any person obtaining a copy\n" +
+				"of this software and associated documentation files (the \"Software\"), to deal\n" +
+				"in the Software without restriction, including without limitation the rights\n" +
+				"to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n" +
+				"copies of the Software, and to permit persons to whom the Software is\n" +
+				"furnished to do so, subject to the following conditions:\n" +
+				"\n" +
+				"The above copyright notice and this permission notice shall be included in\n" +
+				"all copies or substantial portions of the Software.\n" +
+				"\n" +
+				"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n" +
+				"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n" +
+				"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n" +
+				"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n" +
+				"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n" +
+				"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n" +
+				"THE SOFTWARE.\n" +
+				"\n" +
+				"==============================================================================\n" +
+				"Licenses for included components:\n" +
+				"\n" +
+				"org.ow2.asm:asm\n" +
+				"org.ow2.asm:asm-analysis\n" +
+				"org.ow2.asm:asm-commons\n" +
+				"org.ow2.asm:asm-tree\n" +
+				"org.ow2.asm:asm-util\n" +
+				"ASM: a very small and fast Java bytecode manipulation framework\n" +
+				" Copyright (c) 2000-2011 INRIA, France Telecom\n" +
+				" All rights reserved.\n" +
+				"\n" +
+				" Redistribution and use in source and binary forms, with or without\n" +
+				" modification, are permitted provided that the following conditions\n" +
+				" are met:\n" +
+				" 1. Redistributions of source code must retain the above copyright\n" +
+				"    notice, this list of conditions and the following disclaimer.\n" +
+				" 2. Redistributions in binary form must reproduce the above copyright\n" +
+				"    notice, this list of conditions and the following disclaimer in the\n" +
+				"    documentation and/or other materials provided with the distribution.\n" +
+				" 3. Neither the name of the copyright holders nor the names of its\n" +
+				"    contributors may be used to endorse or promote products derived from\n" +
+				"    this software without specific prior written permission.\n" +
+				"\n" +
+				" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n" +
+				" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n" +
+				" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\n" +
+				" ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE\n" +
+				" LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\n" +
+				" CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF\n" +
+				" SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS\n" +
+				" INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\n" +
+				" CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)\n" +
+				" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF\n" +
+				" THE POSSIBILITY OF SUCH DAMAGE.\n" +
+				"\n" +
+				"------------------------------------------------------------------------------\n" +
+				"rzwitserloot/com.zwitserloot.cmdreader \n" +
+				" \n" +
+				" Copyright © 2010 Reinier Zwitserloot.\n" +
+				"\n" +
+				" Permission is hereby granted, free of charge, to any person obtaining a copy\n" +
+				" of this software and associated documentation files (the \"Software\"), to deal\n" +
+				" in the Software without restriction, including without limitation the rights\n" +
+				" to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n" +
+				" copies of the Software, and to permit persons to whom the Software is\n" +
+				" furnished to do so, subject to the following conditions:\n" +
+				"\n" +
+				" The above copyright notice and this permission notice shall be included in\n" +
+				" all copies or substantial portions of the Software.\n" +
+				"\n" +
+				" THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n" +
+				" IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n" +
+				" FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n" +
+				" AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n" +
+				" LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n" +
+				" OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n" +
+				" THE SOFTWARE.\n" +
+				"\n" +
+				"------------------------------------------------------------------------------\n" +
+				"\n" +
+				"rzwitserloot/lombok.patcher\n" +
+				"\n" +
+				" Copyright (C) 2009-2021 The Project Lombok Authors.\n" +
+				" \n" +
+				" Permission is hereby granted, free of charge, to any person obtaining a copy\n" +
+				" of this software and associated documentation files (the \"Software\"), to deal\n" +
+				" in the Software without restriction, including without limitation the rights\n" +
+				" to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n" +
+				" copies of the Software, and to permit persons to whom the Software is\n" +
+				" furnished to do so, subject to the following conditions:\n" +
+				"\n" +
+				" The above copyright notice and this permission notice shall be included in\n" +
+				" all copies or substantial portions of the Software.\n" +
+				"\n" +
+				" THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n" +
+				" IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n" +
+				" FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n" +
+				" AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n" +
+				" LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n" +
+				" OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n" +
+				" THE SOFTWARE.\n" +
+				"\n" +
+				"------------------------------------------------------------------------------\n" +
+				"``\n" +
+				"");
 	}
 
 }
