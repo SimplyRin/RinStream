@@ -44,4 +44,12 @@ public enum ChatColor {
 		return value;
 	}
 
+	public static String stripColor(String value) {
+		for (ChatColor chatColor : ChatColor.values()) {
+			value = value.replace(chatColor.getColorCode(), "");
+			value = value.replace(chatColor.getConsoleColor().toString(), "");
+		}
+		return value;
+	}
+
 }

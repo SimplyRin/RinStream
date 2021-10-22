@@ -10,6 +10,8 @@ import java.util.UUID;
 
 import org.joor.Reflect;
 
+import lombok.Getter;
+
 /**
  * Created by SimplyRin on 2018/08/04.
  *
@@ -35,21 +37,42 @@ import org.joor.Reflect;
  */
 public class RinStream extends PrintStream {
 
+	static {
+		RinStream rs = new RinStream();
+
+		rs.isEnableTranslateColor();
+		rs.isSaveLog();
+		rs.isEnableColor();
+
+		rs.getFile();
+		rs.getFormat();
+
+		rs.getTailProcess();
+	}
+
+	@Getter
 	private File file;
 
+	@Getter
 	private Process tailProcess;
+	@Getter
 	private String tailName;
 
+	@Getter
 	private String format = "[%prefix] [%type]";
 	private String prefix = "HH:mm:ss";
 
+	@Getter
 	private boolean saveLog;
+	@Getter
 	private boolean enableColor;
+	@Getter
 	private boolean enableTranslateColor;
 
 	private static String TAG_INFO = "INFO";
 	private static String TAG_ERROR = "ERROR";
 
+	@Getter
 	private File logFolder;
 
 	@SuppressWarnings("resource")
@@ -84,13 +107,12 @@ public class RinStream extends PrintStream {
 		}
 		String line = this.getPrefix(tag) + " " + value;
 
-
-		Reflect.on(this).call("write", line.trim() + ConsoleColor.RESET);
+		Reflect.on(this).call("write", line.trim() + (this.enableColor ? ChatColor.RESET : ""));
 
 		if (this.saveLog) {
 			try {
 				FileWriter fileWriter = new FileWriter(this.file, true);
-				fileWriter.write(line + "\n");
+				fileWriter.write((this.enableColor ? ChatColor.stripColor(line) : line) + "\n");
 				fileWriter.close();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -98,18 +120,14 @@ public class RinStream extends PrintStream {
 		}
 	}
 
-	public File getFile() {
-		return this.file;
-	}
-
 	public enum Tag {
 		INFO, ERROR;
 
 		public String getTagWithColor() {
 			if (this.equals(INFO)) {
-				return ChatColor.BLUE + TAG_INFO + ConsoleColor.RESET;
+				return ChatColor.BLUE + TAG_INFO + ChatColor.RESET;
 			}
-			return ChatColor.RED + TAG_ERROR + ConsoleColor.RESET;
+			return ChatColor.RED + TAG_ERROR + ChatColor.RESET;
 		}
 
 		public String getName() {
@@ -118,10 +136,6 @@ public class RinStream extends PrintStream {
 			}
 			return TAG_ERROR;
 		}
-	}
-
-	public Process getTailProcess() {
-		return this.tailProcess;
 	}
 
 	/**
@@ -159,6 +173,11 @@ public class RinStream extends PrintStream {
 		return this;
 	}
 
+	public RinStream setFormat(String format) {
+		this.format = format;
+		return this;
+	}
+
 	private String getPrefix(Tag tag) {
 		SimpleDateFormat simpleDataFormat = new SimpleDateFormat(this.prefix);
 		Date date = new Date();
@@ -176,27 +195,14 @@ public class RinStream extends PrintStream {
 		this.enableColor = bool;
 		return this;
 	}
-
-	public boolean isEnableColor() {
-		return this.enableColor;
-	}
-
 	public RinStream setEnableTranslateColor(boolean bool) {
 		this.enableTranslateColor = bool;
 		return this;
 	}
 
-	public boolean isEnableTranslateColor() {
-		return this.enableTranslateColor;
-	}
-
 	public RinStream setSaveLog(boolean bool) {
 		this.saveLog = bool;
 		return this;
-	}
-
-	public boolean isSaveLog() {
-		return this.saveLog;
 	}
 
 	public static void setTagInfo(String tagInfo) {
@@ -228,18 +234,6 @@ public class RinStream extends PrintStream {
 		return this;
 	}
 
-
-
-	@Deprecated
-	public RinStream setMid(String mid) {
-		return this;
-	}
-
-	@Deprecated
-	public String getMid() {
-		return "@DEPRECATED";
-	}
-
 	private File getAvailableName(File folder) {
 		if (!folder.exists()) {
 			folder.mkdirs();
@@ -259,8 +253,9 @@ public class RinStream extends PrintStream {
 
 	}
 
-	public void enableError() {
+	public RinStream enableError() {
 		new ErrorStream();
+		return this;
 	}
 
 	public class ErrorStream extends PrintStream {
