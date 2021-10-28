@@ -8,8 +8,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
 
-import org.joor.Reflect;
-
 import lombok.Getter;
 
 /**
@@ -107,7 +105,13 @@ public class RinStream extends PrintStream {
 		}
 		String line = this.getPrefix(tag) + " " + value;
 
-		Reflect.on(this).call("write", line.trim() + (this.enableColor ? ChatColor.RESET : ""));
+		String trimLine = line.trim() + (this.enableColor ? ChatColor.RESET : "");
+		
+		try {
+			this.write(trimLine.getBytes());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		if (this.saveLog) {
 			try {
@@ -262,7 +266,7 @@ public class RinStream extends PrintStream {
 
 		public ErrorStream() {
 			super(System.err);
-			Reflect.on(System.class).set("err", this);
+			System.setErr(this);
 		}
 
 		@Override
