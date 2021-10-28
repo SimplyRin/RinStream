@@ -43,12 +43,25 @@ public static void main(String[] args) {
 ```
 
 - Dependency
+
+## Java 8
 ```XML
   <dependencies>
     <dependency>
       <groupId>net.simplyrin.rinstream</groupId>
       <artifactId>RinStream</artifactId>
-      <version>1.3.1</version>
+      <version>1.4</version>
+    </dependency>
+  </dependencies>
+```
+
+## Java 16
+```XML
+  <dependencies>
+    <dependency>
+      <groupId>net.simplyrin.rinstream</groupId>
+      <artifactId>RinStream</artifactId>
+      <version>1.4-java16</version>
     </dependency>
   </dependencies>
 ```
