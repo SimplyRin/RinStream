@@ -35,19 +35,6 @@ import lombok.Getter;
  */
 public class RinStream extends PrintStream {
 
-	static {
-		RinStream rs = new RinStream();
-
-		rs.isEnableTranslateColor();
-		rs.isSaveLog();
-		rs.isEnableColor();
-
-		rs.getFile();
-		rs.getFormat();
-
-		rs.getTailProcess();
-	}
-
 	@Getter
 	private File file;
 
@@ -178,6 +165,9 @@ public class RinStream extends PrintStream {
 	}
 
 	public RinStream setFormat(String format) {
+		if (format == null) {
+			format = "";
+		}
 		this.format = format;
 		return this;
 	}
